@@ -17,7 +17,17 @@ struct PtNodo
 };
 typedef struct PtNodo pNodo;
 
-int build_dictionary(char *dictionary_name);
+struct suggestion {
+    int value;
+    char word[max_size_word];
+};
+typedef struct suggestion Suggestion;
+
+pNodo* build_dictionary(char *dictionary_name);
 pNodo* new_node(char symbol);
 int index_children(char symbol);
 int add_word(pNodo *dictionary, char *line);
+
+int auto_complete(pNodo *dictionary, char *input_file, char *output_file, int number_of_suggestions);
+void make_suggestions(char *current_string, pNodo *current_node, Suggestion * current_suggestions, int number_of_suggestions);
+void add_suggestion(Suggestion * suggestions, Suggestion new_suggestion, int number_of_suggestions);
