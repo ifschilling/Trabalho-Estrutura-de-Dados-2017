@@ -2,9 +2,10 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include <sys/time.h>
 #include "Autocompletador.h"
 
-int build_dictionary(char *dictionary_name)
+pNodo* build_dictionary(char *dictionary_name)
 {
     // returns 0 if no error occurred
     int dic_size, aux, counter;
@@ -16,8 +17,7 @@ int build_dictionary(char *dictionary_name)
     if((dic_file = fopen(dictionary_name, "r")) == NULL)
     {
         printf("\nERROR: could not open the dictionary file!\n\n");
-        getchar();
-        return 1;
+        return NULL;
     }
     dic_size = 0;
     while(((aux = fgetc(dic_file)) != '\n')&&(aux != EOF))
@@ -33,7 +33,6 @@ int build_dictionary(char *dictionary_name)
     if(counter != 0)
     {
         printf("ERROR: %i words were not added in the dictionary due to undefined symbols!", counter);
-        getchar();
     }
 
     /*******************************************************/
@@ -41,10 +40,9 @@ int build_dictionary(char *dictionary_name)
     if(fclose(dic_file)!=0)
     {
         printf("\nERROR: could not close the dictionary file!\n\n");
-        getchar();
-        return 1;
+        return NULL;
     }
-    return 0;
+    return dictionary;
 }
 
 pNodo* new_node(char symbol)
@@ -139,4 +137,98 @@ int add_word(pNodo *dictionary, char *line)
         return 1;
     }
     return 0;
+}
+
+
+int auto_complete(pNodo *dictionary, char *input_file, char *output_file, int number_of_suggestions){
+    struct timeval t1, t2;
+    double elapsed_time = 0;
+    int i, j, suggestions_made, suggestions_complete;
+    FILE *input, *output;
+    pNodo *current_node;
+    char current_word[255];
+    Suggestion suggestions[number_of_suggestions];
+
+    if((input = fopen(input_file, "r")) == NULL)
+    {
+        printf("\nERROR: could not open the input file!\n\n");
+        return 1;
+    }
+    if((output = fopen(output_file, "w+")) == NULL)
+    {
+        printf("\nERROR: could not open the output file!\n\n");
+        return 1;
+    }
+    while(fscanf(input, "%s", current_word) != EOF){
+        gettimeofday(&t1, NULL); // starts time count for this word
+        fprintf(output, "%s\n", current_word);
+        current_node = dictionary;
+        for(i = 0; i < number_of_suggestions ; i++){
+            suggestions[i].value = 0;
+            strcpy(suggestions[i].word, "");
+        }
+        i = 0;
+        while(current_word[i] != '\0' && current_node != NULL){
+            j = index_children(current_word[i]);
+            current_node = current_node->children[j];
+            i += 1;
+        }
+        if(current_node == NULL){
+            fprintf(output, "\tnenhum resultado encontrado\n");
+        } else {
+            make_suggestions(current_word, current_node, suggestions, number_of_suggestions);
+            for(j=0;j<number_of_suggestions;j++){
+                if(suggestions[j].value > 0){
+                    fprintf(output, "%14d %s\n", suggestions[j].value, suggestions[j].word);
+                }
+            }
+        }
+        gettimeofday(&t2, NULL); // ends time counting for this word
+        elapsed_time += (t2.tv_sec - t1.tv_sec) * 1000.0;
+        elapsed_time += (t2.tv_usec - t1.tv_usec) / 1000.0;
+    }
+
+    fprintf(output, "\nTempo: %fms", elapsed_time);
+    fclose(input);
+    fclose(output);
+    return 0;
+}
+
+void make_suggestions(char *current_string, pNodo *current_node, Suggestion * current_suggestions, int number_of_suggestions){
+    if(current_node == NULL)
+        return;
+    int i, value;
+    char letter[2], new_current_string[max_size_word];
+    Suggestion s;
+
+    value = current_node->value;
+    if(value != 0){
+        s.value = value;
+        strcpy(s.word, current_string);
+        add_suggestion(current_suggestions, s, number_of_suggestions);
+    }
+    if(current_node->value_children > current_suggestions[number_of_suggestions - 1].value){
+        for(i = 0; i < number_of_symbols; i++){
+            if(current_node->children[i] != NULL){
+                sprintf(letter, "%c", current_node->children[i]->symbol);
+                strcpy(new_current_string, current_string);
+                strcat(new_current_string, letter);
+                make_suggestions(new_current_string, current_node->children[i], current_suggestions, number_of_suggestions);
+            }
+        }
+    }
+}
+
+void add_suggestion(Suggestion * suggestions, Suggestion new_suggestion, int number_of_suggestions){
+    int inserted = 0, i = 0, j;
+    while(inserted == 0 && i < number_of_suggestions){
+        if(suggestions[i].value < new_suggestion.value){
+            for(j = number_of_suggestions - 1; j > i; j--){
+                suggestions[j] = suggestions[j-1];
+            }
+            suggestions[i] = new_suggestion;
+            inserted = 1;
+        }
+        i++;
+    }
 }
