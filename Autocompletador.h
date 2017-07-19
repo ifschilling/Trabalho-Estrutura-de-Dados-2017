@@ -1,5 +1,5 @@
 #define number_of_symbols   39
-#define max_size_word       30
+#define max_size_word       50
 #define max_size_value      14
 
 /*
