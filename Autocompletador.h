@@ -10,7 +10,6 @@ total  = 39
 */
 struct PtNodo
 {
-    char symbol;
     long long int value;  // it's the value of the word that ends in this node
     long long int value_children; // it's the value of the most valuable children it has
     struct PtNodo* children[number_of_symbols];
@@ -26,6 +25,7 @@ typedef struct suggestion Suggestion;
 pNodo* build_dictionary(char *dictionary_name);
 pNodo* new_node(char symbol);
 int index_children(char symbol);
+char symbol_index(int index);
 int add_word(pNodo *dictionary, char *line);
 
 int auto_complete(pNodo *dictionary, char *input_file, char *output_file, int number_of_suggestions);

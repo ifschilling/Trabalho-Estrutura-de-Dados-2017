@@ -53,7 +53,6 @@ pNodo* new_node(char symbol)
     {
         node->children[i] = NULL;
     }
-    node->symbol = symbol;
     node->value = 0;
     node->value_children = 0;
     return node;
@@ -73,6 +72,21 @@ int index_children(char symbol)
         return 37;
     else if(symbol == '-')
         return 38;
+    return -1;
+}
+
+char symbol_index(int index){
+    // returns -1 if receives an undefined symbol
+    if(index >= 0 && index <= 25)
+        return index + 'a';
+    else if(index >= 26 && index<= 35)
+        return index + '0'; // 26 is the number of letters in the alphabet
+    else if(index == 36)
+        return '\''; // letters + digits
+    else if(index == 37)
+        return '.';
+    else if(index == 38)
+        return '-';
     return -1;
 }
 
@@ -223,7 +237,7 @@ void make_suggestions(char *current_string, pNodo *current_node, Suggestion * cu
         {
             if(current_node->children[i] != NULL)
             {
-                sprintf(letter, "%c", current_node->children[i]->symbol);
+                sprintf(letter, "%c", symbol_index(i));
                 strcpy(new_current_string, current_string);
                 strcat(new_current_string, letter);
                 make_suggestions(new_current_string, current_node->children[i], current_suggestions, number_of_suggestions);
